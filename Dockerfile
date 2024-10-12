@@ -1,17 +1,20 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# Install the Docker SDK for Python and OVH library
-RUN pip install ovh docker pandas
-
 # Set the working directory inside the container
 WORKDIR /usr/src/app
 
-# Copy the current directory contents into the container at /usr/src/app
-COPY app/main.py .
+# Copy the entire project into the container at /usr/src/app
+COPY . .
 
-# Make sure the Python script is executable
-RUN chmod +x main.py
+# Set the PYTHONPATH environment variable to include /usr/src/app/src
+ENV PYTHONPATH="/usr/src/app/src"
 
-# Run the Python script
-CMD ["python", "/usr/src/app/main.py"]
+# Install the required Python packages using setup.py
+RUN pip install .
+
+# Set environment variables
+ENV PYTHONUNBUFFERED 1
+
+# Run the main entry point defined in setup.py
+CMD ["domain-manager"]

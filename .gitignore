@@ -1,3 +1,5 @@
 .venv
 .idea
 .env
+/domain_manager.egg-info/
+/build/

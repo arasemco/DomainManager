@@ -1,17 +1,11 @@
 services:
-    ovh_domain_editor:
-        build: ..
+    domain_manager:
+        build: .
         restart: always
-
+        env_file:
+            - .env
         volumes:
-            - ./app:/usr/src/app
-            - /var/run/docker.sock:/var/run/docker.sock
-
+            - ./src:/usr/src/app/src
+            - /var/run/docker_handler.sock:/var/run/docker_handler.sock
         environment:
             - PYTHONUNBUFFERED=1
-
-            - DOMAIN_NAME=asemo.pro
-            - TARGET=vps01.omesa.net.
-            - APPLICATION_KEY=338dc141982979a1
-            - APPLICATION_SECRET=46d4e99be6450d788aa8404f1fa78fe2
-            - CONSUMER_KEY=4fcd46941d35eeec0cb200ca8954f765
