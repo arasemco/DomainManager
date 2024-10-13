@@ -6,6 +6,6 @@ services:
             - .env
         volumes:
             - ./src:/usr/src/app/src
-            - /var/run/docker_handler.sock:/var/run/docker_handler.sock
+            - /var/run/docker.sock:/var/run/docker.sock
         environment:
             - PYTHONUNBUFFERED=1

@@ -11,7 +11,7 @@ except ImportError:
 
 
 def main():
-    docker_base_url = os.getenv('DOCKER_BASE_URL', 'unix://var/run/docker_handler.sock')
+    docker_base_url = os.getenv('DOCKER_BASE_URL', 'unix://var/run/docker.sock')
     print(docker_base_url)
 
     domain_name = os.getenv('DOMAIN_NAME')

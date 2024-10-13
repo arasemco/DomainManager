@@ -1,10 +1,11 @@
 import docker
+import docker.errors
 
 from src.domain.manager.base import DomainManager
 
 
 class DockerEventListener:
-    def __init__(self, domain_manager: DomainManager, base_url: str = 'unix://var/run/docker_handler.sock'):
+    def __init__(self, domain_manager: DomainManager, base_url: str = 'unix://var/run/docker.sock'):
         self.domain_manager = domain_manager
         self.docker_client = docker.DockerClient(base_url=base_url)
 
