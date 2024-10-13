@@ -1,6 +1,6 @@
 import docker
 import docker.errors
-
+from src.utils.logger import logger
 from src.domain.manager.base import DomainManager
 
 
@@ -17,15 +17,15 @@ class DockerEventListener:
                     if event['Type'] == 'container' and 'Action' in event:
                         self._handle_container_event(event)
             except docker.errors.APIError as e:
-                print(f"Docker API error: {str(e)}")
+                logger.error(f"Docker API error: {str(e)}")
 
     def _handle_container_event(self, event):
         container_name = event['Actor']['Attributes'].get('name', '')
         container_hostname = event['Actor']['Attributes'].get('hostname', '')
         subdomain = self._extract_subdomain(container_hostname, event)
 
-        print(f"{event['Action']:8} {'*'*32}")
-        print({
+        logger.info(f"{event['Action']:8} {'*'*32}")
+        logger.info({
             'Action': event.get('Action'),
             'Container name': container_name,
             'Subdomain ': subdomain,
@@ -36,14 +36,14 @@ class DockerEventListener:
                 self._create_subdomain(container_name, subdomain)
             elif event['Action'] == 'destroy':
                 self._remove_subdomain(container_name, subdomain)
-        print()
+        logger.info("Event handling complete\n")
 
     def _create_subdomain(self, container_name, subdomain):
-        print(f"Container {container_name} started. Creating subdomain {subdomain}.{self.domain_manager.domain}.")
+        logger.info(f"Container {container_name} started. Creating subdomain {subdomain}.{self.domain_manager.domain}.")
         self.domain_manager.create_subdomain(subdomain)
 
     def _remove_subdomain(self, container_name, subdomain):
-        print(f"Container {container_name} stopped. Removing subdomain {subdomain}.{self.domain_manager.domain}.")
+        logger.info(f"Container {container_name} stopped. Removing subdomain {subdomain}.{self.domain_manager.domain}.")
         self.domain_manager.remove_subdomain(subdomain)
 
     def _extract_subdomain(self, container_hostname, event):

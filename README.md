@@ -1,70 +1,99 @@
 # 🌐 Domain Manager
 
-**Domain Manager** is a tool designed to automatically manage domains on OVH based on Docker container events. 🐳 It listens to Docker events and creates or removes subdomains accordingly, making it easier to automate the handling of domains for your containers.
+## Overview
+The **Domain Manager** is a tool designed to manage domain records automatically based on Docker container events, such as create and destroy. The tool supports different DNS providers, including **Cloudflare** and **OVH**, leveraging their APIs to dynamically create or remove subdomains.
 
 ## ✨ Features
-- 🔄 Automatic creation and deletion of subdomains based on Docker container lifecycle events.
-- 🌍 Support for OVH domain provider.
-- ⚙️ Customizable settings using environment variables.
+- 📡 Monitors Docker container events.
+- 🔄 Automatically creates and removes subdomains based on container lifecycle.
+- 🌍 Supports Cloudflare and OVH as DNS providers.
+- 🛠️ Logging for tracking and debugging.
+- ⚙️ Configurable through environment variables.
 
-## 📋 Requirements
-- 🐍 Python 3.9+
-- 🐳 Docker
-- 🔑 OVH API credentials
+## 📋 Prerequisites
+- Docker installed and running.
+- Python 3.6 or higher.
+- Appropriate credentials for the supported DNS provider (Cloudflare or OVH).
 
 ## 📥 Installation
-Clone the repository and install the dependencies:
+### Using Docker
+1. **Create a `.env` file** with the following environment variables:
+   ```
+   DNM_ENV=development
+   DNM_DOCKER_BASE_URL=unix://var/run/docker.sock
+   DNM_DOMAIN_NAME=yourdomain.com
+   DNM_TARGET=targetdomain.com  # Typically matched with DNM_DOMAIN_NAME
+   DNM_PROVIDER=OVH  # Or CLOUDFLARE
+   DNM_OVH_APPLICATION_KEY=your_ovh_application_key
+   DNM_OVH_APPLICATION_SECRET=your_ovh_application_secret
+   DNM_OVH_CONSUMER_KEY=your_ovh_consumer_key
+   DNM_CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
+   ```
+2. **Build and run** the Docker container using `docker-compose`:
+   ```sh
+   docker-compose up --build
+   ```
 
-```sh
-$ git clone https://github.com/arasemco/DomainManager.git
-$ cd DomainManager
-$ pip install .
-```
+### Manual Installation
+1. **Clone the repository**:
+   ```sh
+   git clone https://github.com/arasemco/DomainManager.git
+   cd DomainManager
+   ```
 
-Alternatively, you can use `setup.py` to install:
+2. **Install the required Python packages**:
+   ```sh
+   pip install -r requirements.txt
+   ```
 
-```sh
-$ python setup.py install
-```
+3. **Create a `.env` file** with the appropriate environment variables as mentioned in the Docker setup.
 
-## 🌱 Environment Variables
-The following environment variables are used to configure the domain manager:
+4. **Run the application**:
+   ```sh
+   python -m src.main
+   ```
 
-- **🌐 DOMAIN_NAME**: The main domain name to manage subdomains under.
-- **🎯 TARGET**: The target IP address or hostname for the subdomains (defaults to `DOMAIN_NAME` if not set).
-- **🛠️ PROVIDER**: The domain provider (`OVH`).
-- **🔑 APPLICATION_KEY** (for OVH): Your OVH application key.
-- **🗝️ APPLICATION_SECRET** (for OVH): Your OVH application secret.
-- **🔓 CONSUMER_KEY** (for OVH): Your OVH consumer key.
+## ⚙️ Configuration
+### Environment Variables
+The application is configured using environment variables defined in a `.env` file located in the project's root directory:
 
-## 🚀 Usage
-To start listening for Docker events and manage domains accordingly, run the following command:
+- **`DNM_ENV`**: Environment setting (`development`, `production`).
+- **`DNM_DOCKER_BASE_URL`**: Docker socket URL (default: `unix://var/run/docker.sock`).
+- **`DNM_DOMAIN_NAME`**: The base domain name for subdomains.
+- **`DNM_TARGET`**: Target domain or IP.
+- **`DNM_PROVIDER`**: DNS provider (`OVH`, `CLOUDFLARE`).
+- **`DNM_OVH_APPLICATION_KEY`**: OVH application key.
+- **`DNM_OVH_APPLICATION_SECRET`**: OVH application secret.
+- **`DNM_OVH_CONSUMER_KEY`**: OVH consumer key.
+- **`DNM_CLOUDFLARE_API_TOKEN`**: Cloudflare API token.
 
-```sh
-$ ovh-domain-manager
-```
+## 🌍 Supported DNS Providers
+### Cloudflare
+- **`DNM_CLOUDFLARE_API_TOKEN`**: Your Cloudflare API token.
 
-The tool will listen for Docker events such as container creation and destruction, and manage the associated subdomains automatically.
+### OVH
+- **`DNM_OVH_APPLICATION_KEY`**: Your OVH application key.
+- **`DNM_OVH_APPLICATION_SECRET`**: Your OVH application secret.
+- **`DNM_OVH_CONSUMER_KEY`**: Your OVH consumer key.
 
-## 🛠️ Configuration
-The tool uses `python-dotenv` to load environment variables from a `.env` file. You can create a `.env` file in the root directory of your project to specify your environment variables.
+## 📂 Project Structure
+- **`listener.py`**: Contains the `DockerEventListener` class responsible for listening to Docker events and triggering domain management actions.
+- **`base.py`**: Defines the base `DomainManager` class which provides a generic interface for domain-related actions.
+- **`cloudflare_handler.py`**: Implements `CloudflareDomainManager` with methods specific to Cloudflare's API.
+- **`ovh_handler.py`**: Implements `OVHDomainManager` with methods specific to OVH's API.
+- **`logger.py`**: Configures logging for the application.
+- **`main.py`**: Entry point for the application that initializes the `DockerEventListener` and starts listening for events.
 
-Example `.env` file:
+## 📜 Logging
+Logs are generated and stored in both the console and a file named `domain_manager.log`. The logging level is set to `INFO` but can be adjusted as needed within `logger.py`.
 
-```
-DOMAIN_NAME=example.com
-TARGET=192.168.1.100
-PROVIDER=OVH
-APPLICATION_KEY=your_ovh_application_key
-APPLICATION_SECRET=your_ovh_application_secret
-CONSUMER_KEY=your_ovh_consumer_key
-```
-
-## 📜 License
-This project is licensed as Freeware.
+## 📝 License
+This project is licensed under the **Freeware** license.
 
 ## 👤 Author
-Developed by **Aram SEMO**. For any inquiries, you can reach me at [📧 aram.semo@asemo.pro](mailto:aram.semo@asemo.pro).
+- **Aram SEMO**
+  - Email: [aram.semo@asemo.pro](mailto:aram.semo@asemo.pro)
+  - GitHub: [arasemco](https://github.com/arasemco)
 
 ## 🤝 Contributing
 Feel free to submit issues or pull requests to contribute to the project. Contributions are always welcome! ✨

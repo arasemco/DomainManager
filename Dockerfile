@@ -11,7 +11,6 @@ COPY . .
 ENV PYTHONPATH="/usr/src/app/src"
 
 # Install the required Python packages using setup.py
-RUN pip install -r requirements.txt
 RUN pip install .
 
 # Set environment variables

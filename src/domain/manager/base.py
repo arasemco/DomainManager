@@ -1,3 +1,6 @@
+from src.utils.logger import logger
+
+
 class DomainManager:
     def __init__(self, domain, target, field_type='CNAME'):
         self.domain = domain
@@ -16,12 +19,14 @@ class DomainManager:
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     def handle_api_error(self, action, full_domain, error):
-        print(f"[{type(self).__name__}] Failed to {action} subdomain {full_domain}: {str(error)}")
+        logger.error(f"[{type(self).__name__}] Failed to {action} subdomain {full_domain}: {str(error)}")
 
     def extract_subdomain(self, full_domain):
         full_domain_parts = full_domain.split('.')
         if full_domain_parts[-self.domain_length:] == self.domain_parts:
             return '.'.join(full_domain_parts[:-self.domain_length])
+
         elif len(full_domain_parts) == 1:
             return full_domain
+
         return None

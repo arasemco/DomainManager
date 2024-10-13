@@ -1,7 +1,6 @@
 import ovh
-
+from src.utils.logger import logger
 from src.domain.manager.base import DomainManager
-
 
 class OVHDomainManager(DomainManager):
     def __init__(self, domain, target, application_credential, field_type='CNAME'):
@@ -15,6 +14,7 @@ class OVHDomainManager(DomainManager):
     def _validate_domain(self):
         try:
             self.zone = self.client.get(f"/domain/zone/{self.domain}")
+
         except ovh.exceptions.ResourceNotFoundError:
             domains = self.client.get(f"/domain/zone")
             raise TypeError(f"The domain '{self.domain}' does not exist! Available domains: {domains}")
@@ -29,7 +29,8 @@ class OVHDomainManager(DomainManager):
                 target=self.target,
                 ttl=ttl
             )
-            print(f"Subdomain {full_domain} created: {response}")
+            logger.info(f"Subdomain {full_domain} created: {response}")
+
         except ovh.exceptions.APIError as e:
             self.handle_api_error("create", full_domain, e)
 
@@ -43,6 +44,7 @@ class OVHDomainManager(DomainManager):
             )
             for record in records:
                 self.client.delete(f'/domain/zone/{self.domain}/record/{record}')
-            print(f"Subdomain {full_domain} removed: {records}")
+            logger.info(f"Subdomain {full_domain} removed: {records}")
+
         except ovh.exceptions.APIError as e:
             self.handle_api_error("remove", full_domain, e)
