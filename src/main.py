@@ -33,6 +33,8 @@ Target          : {target}
 Domain manager  : {type(domain_manager).__name__}
     """)
 
+    print(docker_event_listener._extract_subdomain("", 'local.firefox.asemo.pro'))
+    exit()
     docker_event_listener.listen_for_events()
 
 
