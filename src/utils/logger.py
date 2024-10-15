@@ -9,6 +9,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 
 # Configure the logger
 log_file_path = Path(project_root, 'logs', "domain_manager.log")
+log_file_path.parent.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,  # Change to INFO or WARNING as needed
