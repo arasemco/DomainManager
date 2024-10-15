@@ -1,6 +1,7 @@
-ovh~=1.2.0
-pandas~=2.2.3
-docker~=7.1.0
-requests~=2.28.2
-setuptools~=75.1.0
-python-dotenv~=1.0.1
+ovh==1.2.0
+requests==2.31.0
+python-dotenv==1.0.1
+docker==7.1.0
+validators==0.34.0
+pytest==8.3.3
+setuptools==75.1.0

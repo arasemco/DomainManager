@@ -1,9 +1,11 @@
 services:
-    domain_manager:
-        build: .
-        restart: always
-        env_file:
-            - .env
-        volumes:
-            - ./src:/usr/src/app/src
-            - /var/run/docker.sock:/var/run/docker.sock
+  domain_manager:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      #- ./src:/usr/src/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock

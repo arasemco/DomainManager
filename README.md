@@ -1,99 +1,87 @@
 # 🌐 Domain Manager
 
-## Overview
-The **Domain Manager** is a tool designed to manage domain records automatically based on Docker container events, such as create and destroy. The tool supports different DNS providers, including **Cloudflare** and **OVH**, leveraging their APIs to dynamically create or remove subdomains.
+## 📝 Overview
+
+The Domain Manager is a 🐍-based system designed to automatically manage 🌐 subdomains via multiple DNS providers, such as OVH and ☁️flare. The project listens to 🐋 container events and ➕ or ➖ subdomains accordingly, based on specific labels attached to the container.
 
 ## ✨ Features
-- 📡 Monitors Docker container events.
-- 🔄 Automatically creates and removes subdomains based on container lifecycle.
-- 🌍 Supports Cloudflare and OVH as DNS providers.
-- 🛠️ Logging for tracking and debugging.
-- ⚙️ Configurable through environment variables.
 
-## 📋 Prerequisites
-- Docker installed and running.
-- Python 3.6 or higher.
-- Appropriate credentials for the supported DNS provider (Cloudflare or OVH).
+- **Supports Multiple DNS Providers**: Compatible with OVH and ☁️flare, providing flexibility for managing subdomains.
+- **Automatic Subdomain Management**: Automatically ➕ or ➖ subdomains based on 🐋 events, making management easy and efficient.
+- **Environment-based Configuration**: Easily manage provider 🔑, domain details, and 🐋 configuration using environment variables.
 
-## 📥 Installation
-### Using Docker
-1. **Create a `.env` file** with the following environment variables:
-   ```
-   DNM_ENV=development
-   DNM_DOCKER_BASE_URL=unix://var/run/docker.sock
-   DNM_DOMAIN_NAME=yourdomain.com
-   DNM_TARGET=targetdomain.com  # Typically matched with DNM_DOMAIN_NAME
-   DNM_PROVIDER=OVH  # Or CLOUDFLARE
-   DNM_OVH_APPLICATION_KEY=your_ovh_application_key
-   DNM_OVH_APPLICATION_SECRET=your_ovh_application_secret
-   DNM_OVH_CONSUMER_KEY=your_ovh_consumer_key
-   DNM_CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
-   ```
-2. **Build and run** the Docker container using `docker-compose`:
-   ```sh
-   docker-compose up --build
-   ```
+## 🔧 Installation
 
-### Manual Installation
-1. **Clone the repository**:
-   ```sh
+1. Clone the repository:
+
+   ```bash
    git clone https://github.com/arasemco/DomainManager.git
-   cd DomainManager
+   cd domain-manager
    ```
 
-2. **Install the required Python packages**:
-   ```sh
-   pip install -r requirements.txt
+2. Install the required dependencies:
+
+   ```bash
+   pip install .
    ```
 
-3. **Create a `.env` file** with the appropriate environment variables as mentioned in the Docker setup.
+3. Create an `.env` file at the project root to configure environment variables:
 
-4. **Run the application**:
-   ```sh
-   python -m src.main
+   ```env
+   DNM_PROVIDER=OVH  # Available options: OVH, ☁️FLARE
+   DNM_OVH_APPLICATION_KEY=<your_ovh_application_key>
+   DNM_OVH_APPLICATION_SECRET=<your_ovh_application_secret>
+   DNM_OVH_CONSUMER_KEY=<your_ovh_consumer_key>
+   DNM_☁️FLARE_API_TOKEN=<your_☁️flare_api_token>
+   DNM_DOMAIN_NAME=<your_domain_name>
+   DNM_TARGET=<your_target>
+   DNM_🐋_BASE_URL=unix://var/run/docker.sock
    ```
 
-## ⚙️ Configuration
-### Environment Variables
-The application is configured using environment variables defined in a `.env` file located in the project's root directory:
+## ▶️ Usage
 
-- **`DNM_ENV`**: Environment setting (`development`, `production`).
-- **`DNM_DOCKER_BASE_URL`**: Docker socket URL (default: `unix://var/run/docker.sock`).
-- **`DNM_DOMAIN_NAME`**: The base domain name for subdomains.
-- **`DNM_TARGET`**: Target domain or IP.
-- **`DNM_PROVIDER`**: DNS provider (`OVH`, `CLOUDFLARE`).
-- **`DNM_OVH_APPLICATION_KEY`**: OVH application key.
-- **`DNM_OVH_APPLICATION_SECRET`**: OVH application secret.
-- **`DNM_OVH_CONSUMER_KEY`**: OVH consumer key.
-- **`DNM_CLOUDFLARE_API_TOKEN`**: Cloudflare API token.
+1. Ensure that 🐋 is running.
 
-## 🌍 Supported DNS Providers
-### Cloudflare
-- **`DNM_CLOUDFLARE_API_TOKEN`**: Your Cloudflare API token.
+2. Start the Domain Manager by running the main 🐍 script:
 
-### OVH
-- **`DNM_OVH_APPLICATION_KEY`**: Your OVH application key.
-- **`DNM_OVH_APPLICATION_SECRET`**: Your OVH application secret.
-- **`DNM_OVH_CONSUMER_KEY`**: Your OVH consumer key.
+   ```bash
+   python main.py
+   ```
 
-## 📂 Project Structure
-- **`listener.py`**: Contains the `DockerEventListener` class responsible for listening to Docker events and triggering domain management actions.
-- **`base.py`**: Defines the base `DomainManager` class which provides a generic interface for domain-related actions.
-- **`cloudflare_handler.py`**: Implements `CloudflareDomainManager` with methods specific to Cloudflare's API.
-- **`ovh_handler.py`**: Implements `OVHDomainManager` with methods specific to OVH's API.
-- **`logger.py`**: Configures logging for the application.
-- **`main.py`**: Entry point for the application that initializes the `DockerEventListener` and starts listening for events.
+   The system will listen to 🐋 events and automatically ➕ or ➖ subdomains based on container labels when they are created (create event) or removed (destroy event).
 
-## 📜 Logging
-Logs are generated and stored in both the console and a file named `domain_manager.log`. The logging level is set to `INFO` but can be adjusted as needed within `logger.py`.
+3. Alternatively, you can use 🐋 Compose to run the Domain Manager:
 
-## 📝 License
-This project is licensed under the **Freeware** license.
+   ```bash
+   docker compose up --build
+   ```
 
-## 👤 Author
-- **Aram SEMO**
-  - Email: [aram.semo@asemo.pro](mailto:aram.semo@asemo.pro)
-  - GitHub: [arasemco](https://github.com/arasemco)
+## 🐋 Event Labels
+
+To manage subdomains via 🐋 containers, include the following label on your container. If you are using traefik 🚦, it will utilize this label, otherwise add the label to create a subdomain for your 🅰️pache/🅽ginx/etc:
+
+- `traefik.http.routers.web.rule`: Specifies the hostname rule for traefik🚦. The format should be ``Host(`subdomain.domain.com`)``.
+
+Supported actions:
+
+- **create**: Add a subdomain for the container.
+- **destroy**: Remove the subdomain.
+- **future**: The start action will verify if the subdomain exists, and if not, it will add it.
+
+## 🔄 Extending Providers
+
+You can add new DNS providers by creating a new class in `src.providers` package that extends `SubdomainProvider` and implements the required abstract methods, along with a few tests to ensure functionality.
+
+## 📜 License
+
+This project is open-source.
 
 ## 🤝 Contributing
-Feel free to submit issues or pull requests to contribute to the project. Contributions are always welcome! ✨
+
+Contributions are welcome! Feel free to open issues or submit pull requests to enhance the Domain Manager.
+
+## 📞 Contact
+
+**👤 Author**: Aram SEMO\
+**✉️ Email**: [aram.semo@asemo.pro](mailto\:aram.semo@asemo.pro)\
+**🛠️ Helper**: OpenAI ChatGPT
