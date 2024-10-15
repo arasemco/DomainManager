@@ -2,12 +2,13 @@ import os
 import re
 import ovh
 import time
+import queue
 import docker
 import random
+import logging
 import requests
 import functools
 import validators
-import logging
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, List, AnyStr, Type
 from threading import Thread
@@ -18,34 +19,30 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('domain_manager')
 
 
-# Custom Exception Classes
+# Custom Exceptions
 class InvalidDomainException(Exception):
-    """Custom exception to indicate an invalid domain name."""
     pass
 
+# Utility Module (SRP)
+class DomainValidator:
+    @staticmethod
+    def validate(name: str):
+        if not validators.domain(name):
+            raise InvalidDomainException(f"The domain name '{name}' is not valid.")
+        return name
 
-# Utility Functions
-def validate_domain(name: str):
-    if not validators.domain(name):
-        raise InvalidDomainException(f"The domain name '{name}' is not valid.")
-    return name
-
-
-def extract_subdomain(full_domain: str, base_domain: str) -> Optional[str]:
-    if not validators.hostname(full_domain) or not validators.hostname(base_domain):
+    @staticmethod
+    def extract_subdomain(full_domain: str, base_domain: str) -> Optional[str]:
+        if not validators.hostname(full_domain) or not validators.hostname(base_domain):
+            return None
+        full_domain_parts = full_domain.split('.')
+        base_domain_parts = base_domain.split('.')
+        if full_domain_parts[-len(base_domain_parts):] == base_domain_parts:
+            subdomain_parts = full_domain_parts[:-len(base_domain_parts)]
+            return '.'.join(subdomain_parts) if subdomain_parts else None
+        elif len(full_domain_parts) == 1:
+            return full_domain
         return None
-
-    full_domain_parts = full_domain.split('.')
-    base_domain_parts = base_domain.split('.')
-
-    if full_domain_parts[-len(base_domain_parts):] == base_domain_parts:
-        subdomain_parts = full_domain_parts[:-len(base_domain_parts)]
-        return '.'.join(subdomain_parts) if subdomain_parts else None
-
-    elif len(full_domain_parts) == 1:
-        return full_domain
-
-    return None
 
 
 # Decorators
@@ -63,20 +60,11 @@ def handle_api_errors(func):
     return wrapper
 
 
-# Abstract Base Classes
+# Intermediate Class for API-Based Providers (LSP)
 class SubdomainProvider(ABC):
     name: str
     keys: List[AnyStr]
     details: List[AnyStr] = ['domain_name', 'target']
-
-    def __init__(self, domain_name: str, target: str):
-        self.domain_name = validate_domain(domain_name)
-        self.target = validate_domain(target)
-
-    def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
-        cls.name = cls.__name__.replace('Provider', '')
-        ProviderFactory.register_provider(cls.name.upper(), cls)
 
     @abstractmethod
     def add_subdomain(self, subdomain: str):
@@ -85,6 +73,15 @@ class SubdomainProvider(ABC):
     @abstractmethod
     def remove_subdomain(self, subdomain: str):
         pass
+
+    def __init__(self, domain_name: str, target: str):
+        self.domain_name = DomainValidator.validate(domain_name)
+        self.target = DomainValidator.validate(target)
+
+    def __init_subclass__(cls, *args, **kwargs):
+        super().__init_subclass__(*args, **kwargs)
+        cls.name = cls.__name__.replace('Provider', '')
+        ProviderFactory.register_provider(cls.name.upper(), cls)
 
     def _log_action(self, action: str, subdomain: str):
         logger.info(f"{action} subdomain '{subdomain}' on '{self.name}' for domain '{self.domain_name}' with target '{self.target}'.")
@@ -103,7 +100,7 @@ class EnvironmentManager:
             formatted_missing = ', '.join(missing)
             formatted_pattern = '\n'.join([f'{prefix}_{key}'.upper() for key in missing])
             raise ValueError(
-                f"Missing {message}: {formatted_missing}.\n"
+                f"Missing {message}: {formatted_missing}."
                 f"Please ensure you set the environment variables as shown below:\n{formatted_pattern}"
             )
         return result
@@ -249,44 +246,50 @@ class SubdomainManager:
         self.provider = provider
 
     def add_subdomain(self, full_domain: str):
-        subdomain = extract_subdomain(full_domain, self.provider.domain_name)
+        subdomain = DomainValidator.extract_subdomain(full_domain, self.provider.domain_name)
         if subdomain:
             self.provider.add_subdomain(subdomain)
         else:
             logger.error(f"Invalid subdomain '{full_domain}' for domain '{self.provider.domain_name}'.")
 
     def remove_subdomain(self, full_domain: str):
-        subdomain = extract_subdomain(full_domain, self.provider.domain_name)
+        subdomain = DomainValidator.extract_subdomain(full_domain, self.provider.domain_name)
         if subdomain:
             self.provider.remove_subdomain(subdomain)
         else:
             logger.error(f"Invalid subdomain '{full_domain}' for domain '{self.provider.domain_name}'.")
 
 
-# Event Listener Interface
-class EventListener(ABC):
-    @abstractmethod
-    def listen(self):
-        pass
-
-
-# Docker Event Listener
-class DockerEventListener(EventListener):
+# Docker Event Listener with Queue
+class DockerEventListener:
     def __init__(self, subdomain_manager: SubdomainManager, base_url: str = 'unix://var/run/docker.sock'):
         self.subdomain_manager = subdomain_manager
         self.docker_client = docker.DockerClient(base_url=base_url)
+        self.event_queue = queue.Queue()
 
     def listen(self):
         listening_thread = Thread(target=self._event_listener, daemon=True)
+        worker_thread = Thread(target=self._process_events, daemon=True)
         listening_thread.start()
-        return listening_thread
+        worker_thread.start()
 
     def _event_listener(self):
         try:
             for event in self.docker_client.events(decode=True, filters={'type': 'container'}):
-                self._handle_event(event)
+                self.event_queue.put(event)
         except Exception as e:
             logger.error(f"Error while listening to Docker events: {e}")
+
+    def _process_events(self):
+        while True:
+            event = self.event_queue.get()
+            print(event['Action'])
+            if event is not None:
+                self._handle_event(event)
+                self.event_queue.task_done()
+                continue
+            self.event_queue.task_done()
+            time.sleep(1)
 
     def _handle_event(self, event):
         action_mapping = {
@@ -304,16 +307,6 @@ class DockerEventListener(EventListener):
                 action_mapping[action](match.group(1))
 
 
-# Event Manager
-class EventManager:
-    def __init__(self, listeners: List[EventListener]):
-        self.listeners = listeners
-
-    def start_listening(self):
-        for listener in self.listeners:
-            listener.listen()
-
-
 # Main Functionality
 def main():
     provider_name = os.getenv('DNM_PROVIDER', 'OVH')
@@ -322,11 +315,12 @@ def main():
     provider = ProviderFactory.get_provider(provider_name)
     manager = SubdomainManager(provider=provider)
 
-    # Using EventManager for managing all listeners
-    docker_listener = DockerEventListener(subdomain_manager=manager, base_url=docker_base_url)
+    # subdomain = 'test'
+    # manager.add_subdomain(subdomain)
+    # manager.remove_subdomain(subdomain)
 
-    event_manager = EventManager(listeners=[docker_listener])
-    event_manager.start_listening()
+    docker_listener = DockerEventListener(subdomain_manager=manager, base_url=docker_base_url)
+    docker_listener.listen()
 
     try:
         while True:
@@ -335,18 +329,7 @@ def main():
         logger.info("Docker Event Listener stopped.")
 
 
-def main_test():
-    provider = ['OVH', 'CLOUDFLARE'][0]
-    provider = ProviderFactory.get_provider(provider)
-    manager = SubdomainManager(provider)
-
-    subdomain = 'test'
-    manager.add_subdomain(subdomain)
-    manager.remove_subdomain(subdomain)
-
-
 if __name__ == '__main__':
     import dotenv
     dotenv.load_dotenv()
-    # main_test()
     main()
