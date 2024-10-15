@@ -8,12 +8,12 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory inside the container
-WORKDIR /usr/local/domain_manager/src
+WORKDIR /usr/local/domain_manager
 
-# Copy the entire project into the container at /usr/src/app
+# Copy the entire project into the container at /usr/local/domain_manager
 COPY . .
 
-# Set the PYTHONPATH environment variable to include /usr/src/app/src
+# Set the PYTHONPATH environment variable to include /usr/local/domain_manager/src
 ENV PYTHONPATH="/usr/local/domain_manager/src"
 
 # Install the required Python packages using setup.py
